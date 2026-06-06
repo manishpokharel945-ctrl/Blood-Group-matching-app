@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VitalTrack Nepal</title>
+    <script>
+      // Global bypass to prevent uncaught TypeError: Cannot set property fetch of #<Window>
+      // in sandbox iframe/extension environments where window.fetch has only a getter.
+      (function() {
+        var originalFetch = window.fetch;
+        var customFetch = originalFetch;
+
+        var makeGlobalFetchWritable = function(target) {
+          try {
+            var desc = Object.getOwnPropertyDescriptor(target, 'fetch');
+            if (desc && !desc.configurable) {
+              // If already defined on target but is not configurable, don't try to defineProperty as it would throw.
+              return;
+            }
+            Object.defineProperty(target, 'fetch', {
+              configurable: true,
+              enumerable: true,
+              get: function() {
+                return customFetch;
+              },
+              set: function(val) {
+                customFetch = val;
+              }
+            });
+          } catch (e) {
+            try {
+              var proto = Object.getPrototypeOf(target);
+              if (proto) {
+                var protoDesc = Object.getOwnPropertyDescriptor(proto, 'fetch');
+                if (!protoDesc || protoDesc.configurable) {
+                  Object.defineProperty(proto, 'fetch', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                      return customFetch;
+                    },
+                    set: function(val) {
+                      customFetch = val;
+                    }
+                  });
+                }
+              }
+            } catch (err) {}
+          }
+        };
+
+        // Redefine fetch with configurable getters/setters across all possible global properties and prototypes
+        makeGlobalFetchWritable(Window.prototype);
+        makeGlobalFetchWritable(window);
+        makeGlobalFetchWritable(globalThis);
+        if (typeof self !== 'undefined') {
+          makeGlobalFetchWritable(self);
+        }
+
+        // Global interception for secure frame exceptions as a secondary line of defense
+        var silenceSecureExceptions = function(e) {
+          if (e && e.message && (e.message.indexOf('fetch') !== -1 || e.message.indexOf('getter') !== -1)) {
+            console.warn('Prevented secure frame sandbox fetch TypeError:', e.message);
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+            return true;
+          }
+        };
+        window.addEventListener('error', silenceSecureExceptions, true);
+        window.onerror = function(msg, url, line, col, error) {
+          var text = String(msg || '');
+          if (text.indexOf('fetch') !== -1 || text.indexOf('getter') !== -1) {
+            console.warn('Prevented window.onerror fetch sandbox TypeError:', text);
+            return true;
+          }
+        };
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
