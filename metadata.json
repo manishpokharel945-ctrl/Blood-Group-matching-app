@@ -1,0 +1,6 @@
+{
+  "name": "VitalTrack Nepal",
+  "description": "Real-time inventory management for hospitals and emergency centers across the Kathmandu Valley and beyond.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
